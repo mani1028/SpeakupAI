@@ -1,0 +1,164 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="dashboard-container">
+    
+    <!-- Header with Stats -->
+    <header class="header">
+        <div class="logo">✨ SpeakUp</div>
+        <div class="stats-bar">
+            <div class="stat-badge">🔥 12</div>
+            <div class="stat-badge">💎 840</div>
+        </div>
+    </header>
+
+    <!-- Daily Word Card -->
+    <div class="daily-word-card">
+        <div class="daily-content">
+            <span class="daily-tag">Word of the Day</span>
+            
+            <!-- NEW: Header with Speaker Icon -->
+            <div class="word-header">
+                <!-- Dynamically loaded from Python/AI -->
+                <h2 id="daily-word">{{ daily_word.word }}</h2>
+                <!-- Removed argument, function now reads DOM -->
+                <button class="speak-mini-btn" onclick="playDailyWord()">
+                    🔊
+                </button>
+            </div>
+            
+            <p id="daily-meaning">{{ daily_word.meaning }}</p>
+            <!-- Added ID to example for easy JS access -->
+            <p id="daily-example" style="font-size:0.8rem; opacity:0.8; margin-top:5px;">"{{ daily_word.example }}"</p>
+        </div>
+        <div class="daily-icon">🧠</div>
+    </div>
+
+    <!-- Welcome & Language Selector -->
+    <div class="welcome-section">
+        <h1 class="welcome-title">Hello, Achiever! 🚀</h1>
+        <div class="welcome-subtitle">
+            <span>My native language is:</span>
+            <select id="native-lang" onchange="updateLang()" class="lang-select">
+                <option value="Hindi">Hindi</option>
+                <option value="Telugu">Telugu</option>
+                <option value="Tamil">Tamil</option>
+                <option value="Spanish">Spanish</option>
+                <option value="French">French</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Learning Path Cards -->
+    <div class="card-grid">
+        
+        <!-- Mode: Conversation -->
+        <div class="mode-card" onclick="goPractice('conversation')">
+            <div class="icon-box">☕</div>
+            <div class="card-info">
+                <h3>Coffee Chat</h3>
+                <p>Casual conversation</p>
+            </div>
+        </div>
+
+        <!-- Mode: Email Drafter -->
+        <div class="mode-card" onclick="goPractice('email_drafter')">
+            <div class="icon-box">✉️</div>
+            <div class="card-info">
+                <h3>Email Assist</h3>
+                <p>Draft pro emails</p>
+            </div>
+        </div>
+
+        <!-- Mode: Job Interview -->
+        <div class="mode-card" onclick="goPractice('job_interview')">
+            <div class="icon-box">💼</div>
+            <div class="card-info">
+                <h3>Job Interview</h3>
+                <p>Mock HR Questions</p>
+            </div>
+        </div>
+
+        <!-- Mode: Reflex Drill -->
+        <div class="mode-card" onclick="goPractice('reflex_drill')">
+            <div class="icon-box">⚡</div>
+            <div class="card-info">
+                <h3>Reflex Drill</h3>
+                <p>Speed Translation</p>
+            </div>
+        </div>
+
+        <!-- NEW: Topic Talk -->
+        <div class="mode-card" onclick="goPractice('topic_talk')">
+            <div class="icon-box">🎤</div>
+            <div class="card-info">
+                <h3>Topic Talk</h3>
+                <p>1-Min Speech Practice</p>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    function updateLang() {
+        localStorage.setItem('sn_native_lang', document.getElementById('native-lang').value);
+    }
+    
+    function goPractice(mode) {
+        window.location.href = `/practice/${mode}`;
+    }
+
+    // Init Language
+    const saved = localStorage.getItem('sn_native_lang');
+    if(saved) document.getElementById('native-lang').value = saved;
+
+    // --- NEW: Play Full Daily Word Content ---
+    async function playDailyWord() {
+        const btn = document.querySelector('.speak-mini-btn');
+        if(btn.classList.contains('playing')) return; // Prevent double click
+
+        // 1. Get text from the card
+        const word = document.getElementById('daily-word').innerText;
+        const meaning = document.getElementById('daily-meaning').innerText;
+        const example = document.getElementById('daily-example').innerText;
+
+        // 2. Construct a natural sentence
+        // "The word is Perspicacious. It means: having a keen understanding... Example: She was a..."
+        const fullText = `The word is ${word}. It means: ${meaning}. For example: ${example}`;
+
+        btn.classList.add('playing');
+        
+        try {
+            // Use the streaming endpoint
+            const res = await fetch('/api/speak', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ text: fullText })
+            });
+
+            if(res.ok) {
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const audio = new Audio(url);
+                
+                audio.onended = () => {
+                    btn.classList.remove('playing');
+                    URL.revokeObjectURL(url);
+                };
+                
+                audio.play();
+            } else {
+                // Fallback to robotic voice if server fails
+                const utt = new SpeechSynthesisUtterance(fullText);
+                utt.lang = 'en-US';
+                utt.onend = () => btn.classList.remove('playing');
+                window.speechSynthesis.speak(utt);
+            }
+        } catch(e) {
+            console.error("Audio failed", e);
+            btn.classList.remove('playing');
+        }
+    }
+</script>
+{% endblock %}
