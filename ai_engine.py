@@ -32,7 +32,7 @@ class GrammarBot:
         elif mode == 'email_drafter':
             return "I am your Email Assistant. Tell me: Who are you emailing and what is the key message? (e.g., 'Tell boss I am sick')"
         else:
-            return "Hi there! I'm Nova, your English tutor. Let's practice conversation. How was your day?"
+            return "Hi there! I'm SpeakUp, your English tutor. Let's practice conversation. How was your day?"
 
     def analyze(self, text, history=[], mode="conversation", native_lang="Hindi"):
         if not text or not text.strip():
@@ -131,7 +131,7 @@ class GrammarBot:
         else:
             system_msg = (
                 f"{guardrail} "
-                f"Role: Friendly Tutor (Nova). Chat casually. Correct mistakes gently. "
+                f"Role: Friendly Tutor (SpeakUp). Chat casually. Correct mistakes gently. "
                 f"JSON Output: "
                 f'{{"corrected": "[Grammar fix]", '
                 f'"reply": "[Natural response]", '
